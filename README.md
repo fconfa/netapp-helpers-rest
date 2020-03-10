@@ -21,6 +21,10 @@ Supported operations are:
 
 See comments in the scripts for further info.
 
+Additional places for info:
+- REST API documentation: https://library.netapp.com/ecmdocs/ECMLP2856304/html/index.html
+- netapp_ontap python module documentation: https://library.netapp.com/ecmdocs/ECMLP2858435/html/index.html
+
 #### syntax
 
 ```
