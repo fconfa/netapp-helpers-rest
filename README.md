@@ -24,16 +24,16 @@ See comments in the scripts for further info.
 #### syntax
 
 ```
-na_helpers_rest.py --snapcreate --vol <volume_name> --base_name <base_name>
-na_helpers_rest.py --snapdelete --vol <volume_name> --snap <snapshot_name>
-na_helpers_rest.py --snaplist --vol <volume_name>
-na_helpers_rest.py --snaprotate --vol <volume_name> --retention <number_of_snapshots>
-na_helpers_rest.py --snaprename --vol <volume_name> --snap <snapshot_name> --new_name <snapshot_new_name>
-na_helpers_rest.py --clonecreate --vol <volume> --snap <snapshot_name> --clone <clone_name>
-na_helpers_rest.py --clonesplit --clone <clone_name>
-na_helpers_rest.py --clonedelete --clone <clone_name>
-na_helpers_rest.py --lunmap --vol <volume> --lun <lun_path> --igroup <ig_name>
-na_helpers_rest.py --lununmap --vol <volume> --lun <lun_path> --igroup <ig_name>
+na_helpers_rest.py [--debug] --snapcreate --vol <volume_name> --base_name <base_name>
+na_helpers_rest.py [--debug] --snapdelete --vol <volume_name> --snap <snapshot_name>
+na_helpers_rest.py [--debug] --snaplist --vol <volume_name>
+na_helpers_rest.py [--debug] --snaprotate --vol <volume_name> --retention <number_of_snapshots>
+na_helpers_rest.py [--debug] --snaprename --vol <volume_name> --snap <snapshot_name> --new_name <snapshot_new_name>
+na_helpers_rest.py [--debug] --clonecreate --vol <volume> --snap <snapshot_name> --clone <clone_name>
+na_helpers_rest.py [--debug] --clonesplit --clone <clone_name>
+na_helpers_rest.py [--debug] --clonedelete --clone <clone_name>
+na_helpers_rest.py [--debug] --lunmap --vol <volume> --lun <lun_path> --igroup <ig_name>
+na_helpers_rest.py [--debug] --lununmap --vol <volume> --lun <lun_path> --igroup <ig_name>
 ```
 
 #### examples
@@ -47,3 +47,10 @@ See `test.sh` for examples of using this tool.
 *  NetApp ONTAP 9.6+
 *  SVM user with required permissions (login via certs is not yet supported)
 *  HTTPS network connection to the SVM
+
+## todo
+
+*  Improve exception handling and management of error states
+*  Add timeout for network connections
+*  Support certificates for connections to the svm
+*  Improve script arguments handling
