@@ -7,8 +7,7 @@ Requirements:
     - SVM user with required permissions (login via certs is not yet supported)
     - HTTPS network connection to the SVM
 
-created: 20191015
-lastmod: 20200220
+20191015 francesco confalonieri
 """
 
 import time
@@ -87,7 +86,7 @@ def snapshot_rename(snapshot, new_name):
 def get_snapshot_list(volume):
     result = Snapshot.get_collection(volume.uuid, name="*")
     lst = list(result)
-    lst.reverse()
+    lst.reverse()  # sort from more to least recent
     return lst
 
 ''' Clone a flexvol from a snapshot'''
@@ -96,17 +95,11 @@ def clone_create(volume, snapshot, svmname, clone_name):
         clone = Volume.from_dict({
             "name": clone_name,
             "clone": {
-                "parent_volume": {
-                    "uuid": volume.uuid
-                },
-                "parent_snapshot": {
-                    "uuid": snapshot.uuid
-                },
+                "parent_volume":   { "uuid": volume.uuid },
+                "parent_snapshot": { "uuid": snapshot.uuid },
                 "is_flexclone": True,
             },
-            "svm": {
-                "name": svmname
-            }
+            "svm": { "name": svmname }
         })
         clone.post()
         return clone
@@ -176,24 +169,26 @@ def lun_unmap(lun_path, ig, svm_name):
 def main():
     global args, logger
 
-    # parse args
     parser = argparse.ArgumentParser(description='Facilities for working with NetApp Snapshots using REST API')
 
+    # commands
     parser.add_argument('--snaplist', dest='cmd', action='store_const', const='SL', help='List all snapshots for a given volume')
     parser.add_argument('--snapcreate', dest='cmd', action='store_const', const='SC', help='Create snapshot of a given volume')
-    parser.add_argument('--snapdelete', dest='cmd', action='store_const', const='SD', help='Create snapshot of a given volume')
-    parser.add_argument('--snaprotate', dest='cmd', action='store_const', const='SR', help='Create snapshot of a given volume')
-    parser.add_argument('--snaprename', dest='cmd', action='store_const', const='SN', help='Create snapshot of a given volume')
+    parser.add_argument('--snapdelete', dest='cmd', action='store_const', const='SD', help='Delete snapshot')
+    parser.add_argument('--snaprotate', dest='cmd', action='store_const', const='SR', help='Rotate snapshots in a volume')
+    parser.add_argument('--snaprename', dest='cmd', action='store_const', const='SN', help='Rename a snapshot')
     parser.add_argument('--clonecreate', dest='cmd', action='store_const', const='CC', help='Create a clone volume from a snapshot')
     parser.add_argument('--clonesplit', dest='cmd', action='store_const', const='CS', help='Splits clone volume from parent')
     parser.add_argument('--clonedelete', dest='cmd', action='store_const', const='CD', help='Delete a clone volume')
     parser.add_argument('--lunmap', dest='cmd', action='store_const', const='LM', help='Map LUN to host')
     parser.add_argument('--lununmap', dest='cmd', action='store_const', const='LU', help='Unmap LUN from host')
 
+    # connection relatec
     parser.add_argument('--na ', dest='vserver_ip', action='store', help='IP or hostname of NetApp vserver (SVM)')
     parser.add_argument('--user ', dest='vserver_username', action='store', help='Username for connecting to the vserver (SVM)')
     parser.add_argument('--pass ', dest='vserver_password', action='store', help='Password for connecting to the vserver (SVM)')
-    
+
+    # parameters
     parser.add_argument('--vol', dest='volname', action='store', help='Name of the volume')
     parser.add_argument('--snap', dest='snapname', action='store', help='Name of the snapshot')
     parser.add_argument('--clone', dest='clonename', action='store', help='Name of the clone volume')
@@ -274,7 +269,7 @@ def main():
                 print("Please specify target volume with --vol")
                 return(1)
 
-    # Rotate
+    # Rotate snapshot
     elif args.cmd == 'SR':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -297,13 +292,13 @@ def main():
                     else:
                         print("No snapshots to rotate (%s found)" % len(snaplist))
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify target volume with --vol")
                 return(1)
 
-    # Rename
+    # Rename snapshot
     elif args.cmd == 'SN':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -317,18 +312,19 @@ def main():
                     if args.snapname:
                         snapshot = get_snapshot(volume, args.snapname)
                         if snapshot:
+                            original_name=snapshot.name
                             if snapshot_rename(snapshot, args.newname):
-                                print("Successfully renamed snapshot {:s} to {:s}".format(snapshot.name, args.newname))
+                                print("Successfully renamed snapshot {:s} to {:s}".format(original_name, snapshot.name))
                             else:
-                                print('(rename) Error?')
+                                print('Error: Cannot rename snapshot {:s}'.format(snapshot.name))
                         else:
-                            print("Error: Unable to find snapshot with name '{}'".format(args.snapname))
+                            print("Error: Unable to find snapshot {:s}".format(args.snapname))
                             return(103)
                     else:
                         print("Please specify snapshot name with --snap")
                         return(1)
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume {:s}".format(args.volname))
                     return(103)
             else:
                 print("Please specify target volume with --vol")
@@ -358,19 +354,19 @@ def main():
                                 print("Error: Cannot create clone of volume {:s} from snapshot {:s}: {:s}".format(volume.name, snapshot.name, str(e)))
                                 return(102)
                         else:
-                            print("Error: Unable to find snapshot with name '{}'".format(args.snapname))
+                            print("Error: Unable to find snapshot with name '{:s}'".format(args.snapname))
                             return(103)
                     else:
                         print("Please specify source snapshot name with --snap")
                         return(1)
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify volume with --vol")
                 return(1)
 
-    # Delete volume
+    # Delete clone volume
     elif args.cmd == 'CD':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -385,13 +381,13 @@ def main():
                         print('Error: Cannot delete volume {:s}: {:s}'.format(volume.name, e))
                         return(156)
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify volume with --vol")
                 return(1)
     
-    # Split
+    # Split clone
     elif args.cmd == 'CS':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -404,13 +400,13 @@ def main():
                     else:
                         print('Error: Cannot split clone volume {:s} from parent.'.format(clone.name))
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify target clone volume with --clone")
                 return(1)
 
-    # Map
+    # Map lun
     elif args.cmd == 'LM':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -435,13 +431,13 @@ def main():
                             print("Error: Unable to map LUN to initiator group.")
                             return(106)
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify target volume with --vol")
                 return(1)
 
-    # Unmap
+    # Unmap lun
     elif args.cmd == 'LU':
         if prepare_connection(args.vserver_ip, args.vserver_username, args.vserver_password):
 
@@ -466,14 +462,14 @@ def main():
                             print("Error: Unable to unmap LUN from initiator group.")
                             return(106)
                 else:
-                    print("Error: Unable to find volume with name '{}'".format(args.volname))
+                    print("Error: Unable to find volume with name '{:s}'".format(args.volname))
                     return(103)
             else:
                 print("Please specify target volume with --vol")
                 return(1)
 
     else:
-        print("Invalid (or none) command given.")
+        print("Invalid command given.")
         return(1)
 
     return(0)
